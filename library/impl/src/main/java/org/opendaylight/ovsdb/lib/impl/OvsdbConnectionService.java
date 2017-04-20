@@ -116,6 +116,9 @@ public class OvsdbConnectionService implements AutoCloseable, OvsdbConnection {
 
     private static int retryPeriod = 100; // retry after 100 milliseconds
 
+    // client event loop group
+    private EventLoopGroup clientEventLoopGroup = new NioEventLoopGroup();
+
 
     public static OvsdbConnection getService() {
         if (connectionService == null) {
@@ -146,7 +149,7 @@ public class OvsdbConnectionService implements AutoCloseable, OvsdbConnection {
                                final SSLContext sslContext) {
         try {
             Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(new NioEventLoopGroup());
+            bootstrap.group(clientEventLoopGroup);
             bootstrap.channel(NioSocketChannel.class);
             bootstrap.option(ChannelOption.TCP_NODELAY, true);
             bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(65535, 65535, 65535));
@@ -176,6 +179,7 @@ public class OvsdbConnectionService implements AutoCloseable, OvsdbConnection {
             return getChannelClient(channel, ConnectionType.ACTIVE, SocketConnectionType.SSL);
         } catch (InterruptedException e) {
             LOG.warn("Failed to connect {}:{}", address, port, e);
+            clientEventLoopGroup.shutdownGracefully();
         }
         return null;
     }
@@ -492,6 +496,7 @@ public class OvsdbConnectionService implements AutoCloseable, OvsdbConnection {
     @Override
     public void close() throws Exception {
         LOG.info("OvsdbConnectionService closed");
+        clientEventLoopGroup.shutdownGracefully();
         JsonRpcEndpoint.close();
     }
 
