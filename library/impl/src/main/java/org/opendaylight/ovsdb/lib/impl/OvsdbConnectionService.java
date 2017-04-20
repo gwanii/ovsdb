@@ -179,7 +179,6 @@ public class OvsdbConnectionService implements AutoCloseable, OvsdbConnection {
             return getChannelClient(channel, ConnectionType.ACTIVE, SocketConnectionType.SSL);
         } catch (InterruptedException e) {
             LOG.warn("Failed to connect {}:{}", address, port, e);
-            clientEventLoopGroup.shutdownGracefully();
         }
         return null;
     }
